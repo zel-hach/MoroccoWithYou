@@ -1,0 +1,122 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+//////////////////// ENUMS ////////////////////
+
+enum Category {
+  restaurant
+  transport
+  activity
+  hotel
+  other
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
+
+enum ItineraryStatus {
+  draft
+  sent
+  validated
+  booked
+}
+
+//////////////////// MODELS ////////////////////
+
+model Users {
+  id        Int         @id @default(autoincrement())
+  email     String      @unique
+  password  String
+  name      String?
+  bookings  Booking[]
+  Itinerary Itinerary[]
+  feedbacks Feedback[]
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  rating    Int?
+  message   String
+  createdAt DateTime @default(now())
+
+  user Users? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Provider {
+  id       Int      @id @default(autoincrement())
+  name     String
+  city     String
+  category Category
+  photo    String[]
+  location Json
+  isActive Boolean  @default(true)
+
+  services Service[]
+}
+
+model Service {
+  id               Int    @id @default(autoincrement())
+  name             String
+  description      String
+  label            String
+  pricePublic      Float
+  commissionAmount Float
+  unit             String
+
+  providerId Int
+  provider   Provider @relation(fields: [providerId], references: [id])
+
+  bookings Booking[]
+}
+
+model Booking {
+  id          Int           @id @default(autoincrement())
+  userId      Int
+  serviceId   Int
+  bookingDate DateTime      @default(now())
+  status      BookingStatus
+
+  totalPrice      Decimal
+  commissionTotal Decimal
+  paymentIntent   String
+
+  user    Users    @relation(fields: [userId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+}
+
+model Itinerary {
+  id     Int             @id @default(autoincrement())
+  userId Int
+  title  String
+  status ItineraryStatus
+
+  days       Json[]
+  totalPrice Decimal
+  intakeForm Json[]
+
+  user Users @relation(fields: [userId], references: [id])
+}
+
+model GroupTrip {
+  id          Int      @id @default(autoincrement())
+  title       String
+  destination String
+  startDate   DateTime
+  endDate     DateTime
+  maxCapacity Int
+
+  program        Json[]
+  pricePerPerson Decimal
+}
+
